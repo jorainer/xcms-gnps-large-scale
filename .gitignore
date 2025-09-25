@@ -18,3 +18,4 @@ vignettes/images/sitcker_draft.xcf
 /vignettes/a-end-to-end-untargeted-metabolomics_files
 MSV*
 old_results
+*.RData
