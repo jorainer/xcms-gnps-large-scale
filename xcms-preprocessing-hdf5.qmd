@@ -1,5 +1,6 @@
 ---
-title: "xcms-based preprocessing of a large LC-MS/MS data set"
+title: "xcms-based preprocessing of a large LC-MS/MS data set using on-disk
+result storage"
 format: pdf
 author: "Philippine Louail, Johannes Rainer"
 bibliography: references.bib
@@ -15,17 +16,21 @@ library(BiocStyle)
 
 In this document we perform the preprocessing of a large untargeted metabolomics
 dataset using the `r Biocpkg("xcms")` package [@louail_xcms_2025] and record
-memory usage and timing of function calls during the analysis. The dataset
-consists of approximately 1,000 samples (mzXML) files which can be downloaded
-from the *MassIVE* repository. The accession ID of the data set is
-*MSV000080030*. Preprocessing of this data set was also performed in
+memory usage and timing of function calls during the analysis. In the present
+analysis we use the new low-memory data processing introduced in *xcms* version
+4.7. Instead of keeping the preprocessing results in memory, they are stored in
+a HDF5 file ensuring efficient data access and low memory footprint. The dataset
+analyzed in this document consists of approximately 1,000 samples (mzXML) files
+which can be downloaded from the *MassIVE* repository. The accession ID of the
+data set is *MSV000080030*. Preprocessing of this data set was also performed in
 [@nothias_feature-based_2020] to exemplify large-scale analysis with *xcms* in
 the framework of the GNPS environment.
 
-Note that the settings for the individual preprocessing steps were not
-optimized for the present data set. For information on how to derive settings
-specific for a data set see the
-[Metabonaut](https://doi.org/10.5281/zenodo.15062929) resource [@louail_rformassspectrometrymetabonaut_2025].
+Note that the settings for the individual preprocessing steps were not optimized
+for the present data set. See
+[Metabonaut](https://doi.org/10.5281/zenodo.15062929)
+[@louail_rformassspectrometrymetabonaut_2025] for more information on how to
+derive data set-specific settings.
 
 # Data import
 
@@ -75,13 +80,16 @@ register(bpstart(MulticoreParam(NCORES)), default = TRUE)
 # Chromatographic peak detection
 
 Chromatographic peak detection is performed using the *CentWave* algorithm using
-the same seetings as in [@nothias_feature-based_2020].
+the same seetings as in [@nothias_feature-based_2020]. With parameter `hdf5File`
+we define the name of the file that is used to store the *xcms* preprocessing
+results.
 
 ```{r}
 cwp <- CentWaveParam(snthresh = 3, noise = 800, peakwidth = c(2, 30),
                      ppm = 20)
 pr <- peakRAM(
-    xmse <- findChromPeaks(mse, param = cwp, chunkSize = NCORES)
+    xmse <- findChromPeaks(mse, param = cwp, chunkSize = NCORES,
+                           hdf5File = "xmse.h5")
 )
 ```
 
@@ -203,14 +211,11 @@ write.table(fall, "xcms_all_features.txt", sep = "\t",
 ```
 
 Next we extract all MS2 spectra associated with any of the features'
-detected chromatographic peaks. Note that we disable parallel processing for
-this step, because we would run out of memory on the computer setup used.
+detected chromatographic peaks.
 
 ```{r}
 #| message: false
 source("https://raw.githubusercontent.com/jorainer/xcms-gnps-tools/master/customFunctions.R")
-bpstop()
-register(SerialParam())
 pr_ms2 <- peakRAM(
     ms2_all <- featureSpectra(xmse, skipFilled = TRUE)
 )
@@ -281,7 +286,7 @@ pandoc.table(pr_ms2, style = "rmarkdown")
 
 The present analysis was performed using the Bioconductor docker images for the
 developmental version 3.22. The analysis was run on `r NCORES` CPUs of a
-[Framework](https://frame.work) 13' notebook with a 13th Gen Intel(R) Core(TM)
+[Framework](https://frame.work/) 13' notebook with a 13th Gen Intel(R) Core(TM)
 i7-1370P CPU (20 cores) and 64 GB of main memory.
 
 ```{r}

@@ -39,8 +39,8 @@ reported in the rendered pdf files. The present analysis was performed using the
 [Bioconductor docker
 image](https://hub.docker.com/r/bioconductor/bioconductor_docker/) for the
 developmental version 3.22. The analysis for the rendered pdf files was run on 4
-CPUs of a Framework 13' notebook with a 13th Gen Intel(R) Core(TM) i7-1370P CPU
-(20 cores) and 64 GB of main memory.
+CPUs of a [Framework](https://frame.work) 13' notebook with a 13th Gen Intel(R)
+Core(TM) i7-1370P CPU (20 cores) and 64 GB of main memory.
 
 ## Analysis files
 
