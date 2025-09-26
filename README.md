@@ -44,7 +44,7 @@ Core(TM) i7-1370P CPU (20 cores) and 64 GB of main memory.
 
 ## Analysis files
 
-- [xcms-preprocessing.qmd](xmcs-preprocessing.qmd): the analysis using the
+- [xcms-preprocessing.qmd](xcms-preprocessing.qmd): the analysis using the
   *conventional* workflow and result objects (`XcmsExperiment`). 64GB of main
   memory are suggested to perform this analysis.
 
