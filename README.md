@@ -44,9 +44,11 @@ Core(TM) i7-1370P CPU (20 cores) and 64 GB of main memory.
 
 ## Analysis files
 
-- [xcms-preprocessing.qmd](xcms-preprocessing.qmd): the analysis using the
-  *conventional* workflow and result objects (`XcmsExperiment`). 64GB of main
-  memory are suggested to perform this analysis.
+- [xcms-preprocessing.qmd](xcms-preprocessing.qmd): workflow using the
+  [MsExperiment](https://bioconductor.org/packages/MsExperiment) +
+  [Spectra](https://bioconductor.org/packages/Spectra)-based infrastructure and
+  the new *xcms* result object (`XcmsExperiment`). 64GB of main memory are
+  suggested to perform this analysis.
 
 - [xcms-preprocessing-hdf5.qmd](xcms-preprocessing-hdf5.qmd): workflow that uses
   the low memory *xcms* result object `XcmsExperimentHdf5`. All preprocessing
