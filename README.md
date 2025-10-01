@@ -47,14 +47,30 @@ Core(TM) i7-1370P CPU (20 cores) and 64 GB of main memory.
 - [xcms-preprocessing.qmd](xcms-preprocessing.qmd): workflow using the
   [MsExperiment](https://bioconductor.org/packages/MsExperiment) +
   [Spectra](https://bioconductor.org/packages/Spectra)-based infrastructure and
-  the new *xcms* result object (`XcmsExperiment`). 64GB of main memory are
-  suggested to perform this analysis.
+  the new *xcms* result object (`XcmsExperiment`). At least 64GB of main memory
+  are suggested to perform this analysis.
 
 - [xcms-preprocessing-hdf5.qmd](xcms-preprocessing-hdf5.qmd): workflow that uses
   the low memory *xcms* result object `XcmsExperimentHdf5`. All preprocessing
   results are stored off-memory in a dedicated HDF5 file, optimized for fast
   access and processing. This enables processing of the data also on computers
   with lower amount of available main memory.
+
+- [xcms-preprocessing-msnbase.Rmd](xcms-preprocessing-msnbase.Rmd): version of
+  the analysis with the results reported in [Nothias, L.F. et al Nat Methods
+  2020 Sep;17(9):905-908](https://doi.org/10.1038/s41592-020-0933-6). It uses
+  the *xcms* version from Bioconductor release 3.10. This version of *xcms*
+  (a.k.a. *xcms 3*) used the infrastructure and data objects from the
+  [*MSnbase*](https://bioconductor.org/packages/MSnbase) Bioconductor package
+  for handling of the MS data.
+
+- [xcms-preprocessing-old.Rmd](xcms-preprocessing-old.Rmd): version of the
+  analysis that used most of the original result objects from the *xcms*
+  package. This version of *xcms* did not support LC-MS/MS data, peak refinement
+  or the new and improved gap-filling, hence only a minimal preprocessing of the
+  data is performed in this file. To run the analysis, the
+  [bioconductor/release_metabolomics2:R3.3.2_Bioc3.4](https://hub.docker.com/layers/bioconductor/release_metabolomics2/R3.3.2_Bioc3.4/images/sha256-eecdb80fc886e0ac4e5e32989a87db0a10ad48c8d737fc5695c2226f21e4aca6)
+  docker image was used which features *xcms* version 1.50.1.
 
 ## Software requirements
 
