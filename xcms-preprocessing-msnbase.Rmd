@@ -1,13 +1,11 @@
 ---
-title: "xcms-based preprocessing of a large LC-MS/MS data set"
-format: pdf
+title: "xcms-based preprocessing of a large LC-MS/MS data set, MSnbase infrastructure"
+output: pdf_document
 author: "Philippine Louail, Johannes Rainer"
 bibliography: references.bib
 ---
 
-```{r}
-#| echo: false
-#| message: false
+```{r, echo = FALSE, message = FALSE}
 library(BiocStyle)
 ```
 
@@ -20,7 +18,19 @@ consists of approximately 1,000 samples (mzXML) files which can be downloaded
 from the *MassIVE* repository. The accession ID of the data set is
 *MSV000080030*. Preprocessing of this data set was also performed in
 [@nothias_feature-based_2020] to exemplify large-scale analysis with *xcms* in
-the framework of the GNPS environment.
+the framework of the GNPS environment. The analysis in this document uses the
+same *xcms* functions and classes from that analysis, i.e., relies on *MSnbase*
+for MS data handling.
+
+The analysis in this document was defined based on Bioconductor version 3.10
+with R version 3.7.3. The versions of the *xcms* and *MSnbase* packages are
+listed in the *Session and computation information* section. Running the code
+from this file on newer versions of R/Bioconductor, respectively versions of the
+*xcms* package will most likely result in errors. The present analysis was run
+using the
+[*RELEASE_3_10*](https://hub.docker.com/layers/bioconductor/bioconductor_docker/RELEASE_3_10/images/sha256-dbe121d95a31eaa88a493ae66aa4035a236b2e37c69341ae74acb405e126f0c6)
+Bioconductor docker image (install with `docker pull
+bioconductor/bioconductor_docker:RELEASE_3_10)`).
 
 Note that the settings for the individual preprocessing steps were not
 optimized for the present data set. For information on how to derive settings
@@ -37,10 +47,8 @@ memory usage and duration of the various function calls we use the `peakRAM()`
 function from the same-named R package. Note however that this function fails to
 properly track memory usage in R if parallel processing is used.
 
-```{r}
-#| message: false
-library(MsExperiment)
-library(Spectra)
+```{r, message = FALSE}
+library(MSnbase)
 library(xcms)
 library(peakRAM)
 ```
@@ -53,25 +61,23 @@ register(bpstart(MulticoreParam(NCORES)), default = TRUE)
 ```
 
 We next define all data files of the project, drop measurements of blanks and
-import the data as a `MsExperiment` object.
+import the data as an `OnDiskMSnExp` object.
 
 ```{r}
 fls <- dir("MSV000080030", pattern = "mzXML$", full.names = TRUE,
            recursive = TRUE)
 fls <- fls[-grep(fls, pattern = "/Blank", fixed = TRUE)]
 pr <- peakRAM(
-    mse <- readMsExperiment(fls)
+    od <- readMSData(fls, mode = "onDisk")
 )
 ```
 
-The data set consists of in total `r length(mse)` files with in total
-`r length(spectra(mse))` spectra, `r sum(msLevel(spectra(mse))) == 1L` MS1 and
-`r sum(msLevel(spectra(mse))) == 2L` MS2 spectra. The size of the object in
-memory is shown below. Note that only spectra metadata is loaded into memory,
-while the mass peak data is retrieved on-the-fly from the original data files.
+The size of the object in memory is shown below. Note that only spectra metadata
+is loaded into memory, while the mass peak data is retrieved on-the-fly from the
+original data files.
 
 ```{r}
-print(object.size(mse), units = "GB")
+print(object.size(od), units = "GB")
 ```
 
 # Chromatographic peak detection
@@ -80,30 +86,22 @@ Chromatographic peak detection is performed using the *CentWave* algorithm using
 the same seetings as in [@nothias_feature-based_2020].
 
 ```{r}
-cwp <- CentWaveParam(snthresh = 3, noise = 800, peakwidth = c(2, 30),
-                     ppm = 20)
+cwp <- CentWaveParam(snthresh = 3, noise = 800, peakwidth = c(2, 30), ppm = 20)
 tmp <- peakRAM(
-    xmse <- findChromPeaks(mse, param = cwp, chunkSize = NCORES)
+    xod <- findChromPeaks(od, param = cwp)
 )
 pr <- rbind(pr, tmp)
 ```
 
-In total `r nrow(chromPeaks(xmse))` chromatographic peaks were identified. We
-next perform the peak refinement to reduce peak detection artifacts.
+In total `r nrow(chromPeaks(xod))` chromatographic peaks were identified.
 
-```{r}
-tmp <- peakRAM(refineChromPeaks(xmse, MergeNeighboringPeaksParam(),
-                                chunkSize = NCORES))
-pr <- rbind(pr, tmp)
-```
-
-After peak refinement, `r nrow(chromPeaks(xmse))` chromatographic peaks are
-present.
+Peak refinement is not available with *xcms* version used in this analysis
+(3.8.2), thus we have to skip this step.
 
 The size of the result object in memory is:
 
 ```{r}
-print(object.size(xmse), units = "GB")
+print(object.size(xod), units = "GB")
 ```
 
 # Alignment
@@ -114,10 +112,10 @@ grouped across samples) *anchor peaks* will be defined that are used to reduce
 retention time shifts and hence align the samples.
 
 ```{r}
-pdp <- PeakDensityParam(sampleGroups = rep(1, length(xmse)),
+pdp <- PeakDensityParam(sampleGroups = rep(1, length(fileNames(xod))),
                         bw = 2, binSize = 0.1, minFraction = 0.5)
 tmp <- peakRAM(
-    xmse <- groupChromPeaks(xmse, param = pdp)
+    xod <- groupChromPeaks(xod, param = pdp)
 )
 pr <- rbind(pr, tmp)
 ```
@@ -127,7 +125,7 @@ Next we perform the retention time alignment.
 ```{r}
 pgp <- PeakGroupsParam(minFraction = 0.7, extraPeaks = 100, span = 0.3)
 tmp <- peakRAM(
-    xmse <- adjustRtime(xmse, param = pgp)
+    xod <- adjustRtime(xod, param = pgp)
 )
 pr <- rbind(pr, tmp)
 ```
@@ -135,7 +133,7 @@ pr <- rbind(pr, tmp)
 The size of the result object in memory is:
 
 ```{r}
-print(object.size(xmse), units = "GB")
+print(object.size(xod), units = "GB")
 ```
 
 # Correspondence analysis
@@ -143,32 +141,36 @@ print(object.size(xmse), units = "GB")
 We next perform the correspondence analysis.
 
 ```{r}
-pdp <- PeakDensityParam(sampleGroups = rep(1, length(xmse)),
+pdp <- PeakDensityParam(sampleGroups = rep(1, length(fileNames(xod))),
                         bw = 2, binSize = 0.015, minFraction = 0.03)
 tmp <- peakRAM(
-    xmse <- groupChromPeaks(xmse, param = pdp)
+    xod <- groupChromPeaks(xod, param = pdp)
 )
 pr <- rbind(pr, tmp)
 ```
 
-The total number of defined LC-MS features are
-`r nrow(featureDefinitions(xmse))`.
+After correspondence analysis we have `r nrow(featureDefinitions(xod))`
+features.
 
 The size of the result object in memory is:
 
 ```{r}
-print(object.size(xmse), units = "GB")
+print(object.size(xod), units = "GB")
 ```
 
 # Gap filling
 
 As a last step in the preprocessing, we perform the gap-filling to reduce the
-number of missing values.
+number of missing values. The only gap-filling method available for the
+currently used *xcms* version 3.8.2 is the `FillChromPeaksParam()` method.
 
 ```{r}
+## Fill missing peak data
+medWidth <- median(chromPeaks(xod)[, "rtmax"] -
+                   chromPeaks(xod)[, "rtmin"])
 tmp <- peakRAM(
-    xmse <- fillChromPeaks(xmse, param = ChromPeakAreaParam(),
-                           chunkSize = NCORES)
+    xod <- fillChromPeaks(
+        xod, param = FillChromPeaksParam(fixedRt = medWidth))
 )
 pr <- rbind(pr, tmp)
 ```
@@ -176,7 +178,7 @@ pr <- rbind(pr, tmp)
 The size of the result object in memory is:
 
 ```{r}
-print(object.size(xmse), units = "GB")
+print(object.size(xod), units = "GB")
 ```
 
 # Summary of preprocessing performance
@@ -193,9 +195,9 @@ pandoc.table(pr, style = "rmarkdown")
 ```
 
 ```{r}
-dr <- "xcms-preprocessing"
+dr <- "xcms-preprocessing-msnbase"
 dir.create(dr, showWarnings = FALSE)
-save(xmse, file = file.path(dr, "xmse.RData"))
+save(xod, file = file.path(dr, "xod.RData"))
 ```
 
 # Prepare and export data for GNPS
@@ -207,11 +209,11 @@ described in [@nothias_feature-based_2020].
 We first extract the feature values from the result object.
 
 ```{r}
-fall <- featureDefinitions(xmse)[, c("mzmin", "mzmed", "mzmax",
+fall <- featureDefinitions(xod)[, c("mzmin", "mzmed", "mzmax",
                                      "rtmin", "rtmed", "rtmax")]
 fall <- cbind(feature_id = rownames(fall),
               fall,
-              featureValues(xmse, value = "into"))
+              featureValues(xod, value = "into"))
 write.table(fall, file.path(dr, "xcms_all_features.txt"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 ```
@@ -220,53 +222,28 @@ Next we extract all MS2 spectra associated with any of the features'
 detected chromatographic peaks. Note that we disable parallel processing for
 this step, because we would run out of memory on the computer setup used.
 
-```{r}
-#| message: false
-source("https://raw.githubusercontent.com/jorainer/xcms-gnps-tools/master/customFunctions.R")
+```{r, message = FALSE}
 bpstop()
 register(SerialParam())
+source("https://raw.githubusercontent.com/jorainer/xcms-gnps-tools/master/customFunctions.R")
 pr_ms2 <- peakRAM(
-    ms2_all <- featureSpectra(xmse, skipFilled = TRUE)
+    ms2_all <- clean(featureSpectra(xod, return.type = "Spectra"), all = TRUE)
 )
 ```
 
 In total `r length(ms2_all)` MS2 spectra were identified and extracted for the
-`r nrow(fall)` LC-MS features. We also clean and re-format the extracted MS2
-spectra for their use in GNPS.
-
-```{r}
-## ms2_all <- filterIntensity(ms2_all, intensity = 0)
-## ms2_all <- filterEmptySpectra(ms2_all)
-ms2_all <- formatSpectraForGNPS(ms2_all)
-```
+`r nrow(fall)` LC-MS features.
 
 We next select a single MS2 spectrum for each feature and export this reduced
-set also as an .mgf file. We use the `Spectra::combineSpectra()` function to
-*combine* spectra with the same value for parameter `f` into one. In the example
-below we use the `maxTicPeaksData()` function from the
-[xcms-gnps-tools](https://github.com/jorainer/xcms-gnps-tools) repository to
-report for each feature only the fragment peaks matrix with the largest TIC. As
-an alternative, the `combineSpectra()` method would also allow to create a
-*representative* spectrum combining all fragment peaks or reporting fragment
-peaks present in e.g. 80% of related fragment spectra (see next section for an
-example). The sets of fragment spectra assigned to a feature have to be declared
-with parameter `f` (which in our example is set to `f =
-feature_ms2$FEATURE_ID`, defining for each spectrum the feature it is
-related to). In addition, we have to change parameter `p` (which defines how to
-split and process the `Spectra` object in parallel) from the default `p =
-dataStorage(object)` to `p = rep(1, length(feature_ms2))` hence switching
-from a per-mzML-file-based processing to a processing that allows to select a
-single representative fragment spectrum for feature across all data files.
+set also as an .mgf file.
 
-```{r}
-#| message: false
+```{r, message = FALSE}
 tmp <- peakRAM(
-    ms2_maxtic <- combineSpectra(
-        ms2_all, f = ms2_all$FEATURE_ID,
-        p = rep(1, length(ms2_all)), FUN = maxTicPeaksData)
+    ## Select for each feature the MS2 spectrum with the largetst TIC
+    ms2_maxtic <- combineSpectra(ms2_all, fcol = "feature_id",
+                                 fun = maxTic)
 )
 pr_ms2 <- rbind(pr_ms2, tmp)
-spectraNames(ms2_maxtic) <- paste0(ms2_maxtic$FEATURE_ID, " maxTic")
 ```
 
 Next we export the data to a file which can then be submitted to GNPS [feature-based
@@ -274,11 +251,8 @@ molecular
 networking](https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/).
 
 ```{r}
-library(MsBackendMgf)
 tmp <- peakRAM(
-    export(backend = MsBackendMgf(),
-           ms2_maxtic,
-           file = file.path(dr, "ms2spectra_maxTic.mgf"))
+    writeMgfData(ms2_maxtic, file.path(dr, "ms2_maxtic.mgf"))
 )
 pr_ms2 <- rbind(pr_ms2, tmp)
 ```

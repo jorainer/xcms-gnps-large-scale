@@ -50,6 +50,13 @@ library(xcms)
 library(peakRAM)
 ```
 
+Setup parallel processing.
+
+```{r}
+NCORES <- 4
+register(bpstart(MulticoreParam(NCORES)), default = TRUE)
+```
+
 We next define all data files of the project, drop measurements of blanks and
 import the data as a `MsExperiment` object.
 
@@ -57,7 +64,9 @@ import the data as a `MsExperiment` object.
 fls <- dir("MSV000080030", pattern = "mzXML$", full.names = TRUE,
            recursive = TRUE)
 fls <- fls[-grep(fls, pattern = "/Blank", fixed = TRUE)]
-mse <- readMsExperiment(fls)
+pr <- peakRAM(
+    mse <- readMsExperiment(fls)
+)
 ```
 
 The data set consists of in total `r length(mse)` files with in total
@@ -70,13 +79,6 @@ while the mass peak data is retrieved on-the-fly from the original data files.
 print(object.size(mse), units = "GB")
 ```
 
-Setup parallel processing.
-
-```{r}
-NCORES <- 4
-register(bpstart(MulticoreParam(NCORES)), default = TRUE)
-```
-
 # Chromatographic peak detection
 
 Chromatographic peak detection is performed using the *CentWave* algorithm using
@@ -87,19 +89,25 @@ results.
 ```{r}
 cwp <- CentWaveParam(snthresh = 3, noise = 800, peakwidth = c(2, 30),
                      ppm = 20)
-pr <- peakRAM(
+tmp <- peakRAM(
     xmse <- findChromPeaks(mse, param = cwp, chunkSize = NCORES,
                            hdf5File = "xmse.h5")
 )
-```
-
-We next perform the peak refinement to reduce peak detection artifacts.
-
-```{r}
-tmp <- peakRAM(refineChromPeaks(xmse, MergeNeighboringPeaksParam(),
-                                chunkSize = NCORES))
 pr <- rbind(pr, tmp)
 ```
+
+In total `r nrow(chromPeaks(xmse))` chromatographic peaks were identified. We
+next perform the peak refinement to reduce peak detection artifacts.
+
+```{r}
+tmp <- peakRAM(
+    xmse <- refineChromPeaks(xmse, MergeNeighboringPeaksParam(),
+                             chunkSize = NCORES))
+pr <- rbind(pr, tmp)
+```
+
+After peak refinement, `r nrow(chromPeaks(xmse))` chromatographic peaks are
+present.
 
 The size of the result object in memory is:
 
@@ -152,6 +160,9 @@ tmp <- peakRAM(
 pr <- rbind(pr, tmp)
 ```
 
+The total number of defined LC-MS features are
+`r nrow(featureDefinitions(xmse))`.
+
 The size of the result object in memory is:
 
 ```{r}
@@ -185,11 +196,15 @@ usage is not tracked properly by the `peakRAM()` function.
 
 ```{r, results = "asis"}
 library(pander)
+pr$Elapsed_Time_sec <- pr$Elapsed_Time_sec / 60
+colnames(pr)[colnames(pr) == "Elapsed_Time_sec"] <- "Elapsed_Time_minutes"
 pandoc.table(pr, style = "rmarkdown")
 ```
 
 ```{r}
-save(xmse, file = "xmse.RData")
+dr <- "xcms-preprocessing-hdf5"
+dir.create(dr, showWarnings = FALSE)
+save(xmse, file = file.path(dr, "xmse_h5.RData"))
 ```
 
 # Prepare and export data for GNPS
@@ -206,7 +221,7 @@ fall <- featureDefinitions(xmse)[, c("mzmin", "mzmed", "mzmax",
 fall <- cbind(feature_id = rownames(fall),
               fall,
               featureValues(xmse, value = "into"))
-write.table(fall, "xcms_all_features.txt", sep = "\t",
+write.table(fall, file.path(dr, "xcms_all_features.txt"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 ```
 
@@ -268,7 +283,8 @@ networking](https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularn
 library(MsBackendMgf)
 tmp <- peakRAM(
     export(backend = MsBackendMgf(),
-           ms2_maxtic, file = "ms2spectra_maxTic.mgf")
+           ms2_maxtic,
+           file = file.path(dr, "ms2spectra_maxTic.mgf"))
 )
 pr_ms2 <- rbind(pr_ms2, tmp)
 ```
@@ -279,6 +295,9 @@ The time elapse for the individual result extraction, formatting for GNPS and
 export steps along with memory usage is shown in the table below.
 
 ```{r, results = "asis"}
+pr_ms2$Elapsed_Time_sec <- pr_ms2$Elapsed_Time_sec / 60
+colnames(pr_ms2)[colnames(pr_ms2) == "Elapsed_Time_sec"] <-
+    "Elapsed_Time_minutes"
 pandoc.table(pr_ms2, style = "rmarkdown")
 ```
 
