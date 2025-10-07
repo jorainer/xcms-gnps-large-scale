@@ -11,11 +11,11 @@ library(BiocStyle)
 
 # Introduction
 
-In this document we perform the preprocessing of a large untargeted metabolomics
-dataset using the `r Biocpkg("xcms")` package [@louail_xcms_2025] and record
-memory usage and timing of function calls during the analysis. The dataset
-consists of approximately 1,000 samples (mzXML) files which can be downloaded
-from the *MassIVE* repository. The accession ID of the data set is
+In this document we perform the preprocessing of a large untargeted
+metabolomics dataset using the `r Biocpkg("xcms")` package [@louail_xcms_2025]
+and record memory usage and timing of function calls during the analysis. The
+dataset consists of approximately **1,000 samples** (mzXML) files which can be
+downloaded from the *MassIVE* repository. The accession ID of the data set is
 *MSV000080030*. Preprocessing of this data set was also performed in
 [@nothias_feature-based_2020] to exemplify large-scale analysis with *xcms* in
 the framework of the GNPS environment. The analysis in this document uses the
@@ -25,27 +25,29 @@ for MS data handling.
 The analysis in this document was defined based on Bioconductor version 3.10
 with R version 3.7.3. The versions of the *xcms* and *MSnbase* packages are
 listed in the *Session and computation information* section. Running the code
-from this file on newer versions of R/Bioconductor, respectively versions of the
-*xcms* package will most likely result in errors. The present analysis was run
-using the
+from this file on newer versions of R/Bioconductor, respectively versions of
+the *xcms* package will most likely result in errors. The present analysis was
+run using the
 [*RELEASE_3_10*](https://hub.docker.com/layers/bioconductor/bioconductor_docker/RELEASE_3_10/images/sha256-dbe121d95a31eaa88a493ae66aa4035a236b2e37c69341ae74acb405e126f0c6)
-Bioconductor docker image (install with `docker pull
-bioconductor/bioconductor_docker:RELEASE_3_10)`).
+Bioconductor docker image (install with
+`docker pull bioconductor/bioconductor_docker:RELEASE_3_10)`).
 
 Note that the settings for the individual preprocessing steps were not
 optimized for the present data set. For information on how to derive settings
 specific for a data set see the
-[Metabonaut](https://doi.org/10.5281/zenodo.15062929) resource [@louail_rformassspectrometrymetabonaut_2025].
+[Metabonaut](https://doi.org/10.5281/zenodo.15062929) resource
+[@louail_rformassspectrometrymetabonaut_2025].
 
 # Data import
 
 It is assumed that the mzXML files were downloaded from MassIVE and the
 *MSV000080030* folder was placed within the same directory this quarto document
 resides. We first load all required libraries and configure the parallel
-processing setup. For the present analysis we use 4 parallel processes. To track
-memory usage and duration of the various function calls we use the `peakRAM()`
-function from the same-named R package. Note however that this function fails to
-properly track memory usage in R if parallel processing is used.
+processing setup. For the present analysis we use 4 parallel processes. To
+track memory usage and duration of the various function calls we use the
+`peakRAM()` function from the same-named R package. Note however that this
+function fails to properly track memory usage in R if parallel processing is
+used.
 
 ```{r, message = FALSE}
 library(MSnbase)
@@ -72,9 +74,9 @@ pr <- peakRAM(
 )
 ```
 
-The size of the object in memory is shown below. Note that only spectra metadata
-is loaded into memory, while the mass peak data is retrieved on-the-fly from the
-original data files.
+The size of the object in memory is shown below. Note that only spectra
+metadata is loaded into memory, while the mass peak data is retrieved
+on-the-fly from the original data files.
 
 ```{r}
 print(object.size(od), units = "GB")
@@ -82,8 +84,8 @@ print(object.size(od), units = "GB")
 
 # Chromatographic peak detection
 
-Chromatographic peak detection is performed using the *CentWave* algorithm using
-the same seetings as in [@nothias_feature-based_2020].
+Chromatographic peak detection is performed using the *CentWave* algorithm
+using the same seetings as in [@nothias_feature-based_2020].
 
 ```{r}
 cwp <- CentWaveParam(snthresh = 3, noise = 800, peakwidth = c(2, 30), ppm = 20)
@@ -107,8 +109,8 @@ print(object.size(xod), units = "GB")
 # Alignment
 
 Prior retention time alignment we need to perform an initial correspondence
-analysis. Among the such defined features (i.e., chromatographic peaks
-grouped across samples) *anchor peaks* will be defined that are used to reduce
+analysis. Among the such defined features (i.e., chromatographic peaks grouped
+across samples) *anchor peaks* will be defined that are used to reduce
 retention time shifts and hence align the samples.
 
 ```{r}
@@ -218,9 +220,9 @@ write.table(fall, file.path(dr, "xcms_all_features.txt"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 ```
 
-Next we extract all MS2 spectra associated with any of the features'
-detected chromatographic peaks. Note that we disable parallel processing for
-this step, because we would run out of memory on the computer setup used.
+Next we extract all MS2 spectra associated with any of the features' detected
+chromatographic peaks. Note that we disable parallel processing for this step,
+because we would run out of memory on the computer setup used.
 
 ```{r, message = FALSE}
 bpstop()
@@ -246,8 +248,8 @@ tmp <- peakRAM(
 pr_ms2 <- rbind(pr_ms2, tmp)
 ```
 
-Next we export the data to a file which can then be submitted to GNPS [feature-based
-molecular
+Next we export the data to a file which can then be submitted to GNPS
+[feature-based molecular
 networking](https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/).
 
 ```{r}
@@ -257,7 +259,7 @@ tmp <- peakRAM(
 pr_ms2 <- rbind(pr_ms2, tmp)
 ```
 
-# Summary of data export perforamce
+# Summary of data export performance
 
 The time elapse for the individual result extraction, formatting for GNPS and
 export steps along with memory usage is shown in the table below.
