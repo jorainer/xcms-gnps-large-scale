@@ -16,7 +16,7 @@ library(BiocStyle)
 In this document we perform the preprocessing of a large untargeted metabolomics
 dataset using the `r Biocpkg("xcms")` package [@louail_xcms_2025] and record
 memory usage and timing of function calls during the analysis. The dataset
-consists of approximately 1,000 samples (mzXML) files which can be downloaded
+consists of approximately **1,000 samples** (mzXML) files which can be downloaded
 from the *MassIVE* repository. The accession ID of the data set is
 *MSV000080030*. Preprocessing of this data set was also performed in
 [@nothias_feature-based_2020] to exemplify large-scale analysis with *xcms* in
@@ -89,7 +89,9 @@ pr <- rbind(pr, tmp)
 ```
 
 In total `r nrow(chromPeaks(xmse))` chromatographic peaks were identified. We
-next perform the peak refinement to reduce peak detection artifacts.
+next perform the peak refinement to reduce peak detection artifacts. This step
+was not performed in the original analysis. It was developed to improve the 
+output of the chromatographic peak detection. 
 
 ```{r}
 tmp <- peakRAM(refineChromPeaks(xmse, MergeNeighboringPeaksParam(),
@@ -283,7 +285,7 @@ tmp <- peakRAM(
 pr_ms2 <- rbind(pr_ms2, tmp)
 ```
 
-# Summary of data export perforamce
+# Summary of data export performance
 
 The time elapse for the individual result extraction, formatting for GNPS and
 export steps along with memory usage is shown in the table below.
