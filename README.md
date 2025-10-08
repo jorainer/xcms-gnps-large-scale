@@ -72,6 +72,9 @@ Core(TM) i7-1370P CPU (20 cores) and 64 GB of main memory.
   [bioconductor/release_metabolomics2:R3.3.2_Bioc3.4](https://hub.docker.com/layers/bioconductor/release_metabolomics2/R3.3.2_Bioc3.4/images/sha256-eecdb80fc886e0ac4e5e32989a87db0a10ad48c8d737fc5695c2226f21e4aca6)
   docker image was used which features *xcms* version 1.50.1.
 
+- [MSV000080030.R](MSV000080030.R): R script used to perform the original
+  analysis described in the Supplement from Nothias et al.
+
 ## Software requirements
 
 The docker image for the Bioconductor 3.22 developmental version can be
@@ -83,3 +86,7 @@ All required R packages can be installed using:
 BiocManager::install(c("xcms", "MsExperiment", "peakRAM",
     "pander", "MsBackendMgf", "rhdf5"))
 ```
+
+To docker image for the Bioconductor release 3.10 used for
+*xcms-preprocessing-msnbase.Rmd* can be retrieved using `docker pull
+bioconductor/bioconductor_docker:RELEASE_3_10`.

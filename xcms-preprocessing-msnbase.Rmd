@@ -1,5 +1,7 @@
 ---
-title: "xcms-based preprocessing of a large LC-MS/MS data set, MSnbase infrastructure"
+title: "xcms-based preprocessing of a large LC-MS/MS data set; xcms version 3 with MSnbase infrastructure"
+subtitle: "Supplementary Material for: *xcms in peak form: Now anchoring a complete
+metabolomics data preprocessing and analysis software ecosystem*"
 output: pdf_document
 author: "Philippine Louail, Johannes Rainer"
 bibliography: references.bib

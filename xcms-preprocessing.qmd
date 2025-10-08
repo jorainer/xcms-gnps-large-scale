@@ -1,5 +1,7 @@
 ---
-title: "xcms-based preprocessing of a large LC-MS/MS data set"
+title: "xcms-based preprocessing of a large LC-MS/MS data set; xcms version 4"
+subtitle: "Supplementary Material for: *xcms in peak form: Now anchoring a complete
+metabolomics data preprocessing and analysis software ecosystem*"
 format: pdf
 author: "Philippine Louail, Johannes Rainer"
 bibliography: references.bib
@@ -16,16 +18,16 @@ library(BiocStyle)
 In this document we perform the preprocessing of a large untargeted metabolomics
 dataset using the `r Biocpkg("xcms")` package [@louail_xcms_2025] and record
 memory usage and timing of function calls during the analysis. The dataset
-consists of approximately **1,000 samples** (mzXML) files which can be downloaded
-from the *MassIVE* repository. The accession ID of the data set is
+consists of approximately **1,000 samples** (mzXML) files which can be
+downloaded from the *MassIVE* repository. The accession ID of the data set is
 *MSV000080030*. Preprocessing of this data set was also performed in
 [@nothias_feature-based_2020] to exemplify large-scale analysis with *xcms* in
 the framework of the GNPS environment.
 
-Note that the settings for the individual preprocessing steps were not
-optimized for the present data set. For information on how to derive settings
-specific for a data set see the
-[Metabonaut](https://doi.org/10.5281/zenodo.15062929) resource [@louail_rformassspectrometrymetabonaut_2025].
+Note that the settings for the individual preprocessing steps were not optimized
+for the present data set. For information on how to derive settings specific for
+a data set see the [Metabonaut](https://doi.org/10.5281/zenodo.15062929)
+resource [@louail_rformassspectrometrymetabonaut_2025].
 
 # Data import
 
@@ -90,8 +92,8 @@ pr <- rbind(pr, tmp)
 
 In total `r nrow(chromPeaks(xmse))` chromatographic peaks were identified. We
 next perform the peak refinement to reduce peak detection artifacts. This step
-was not performed in the original analysis. It was developed to improve the 
-output of the chromatographic peak detection. 
+was not performed in the original analysis. It was developed to improve the
+output of the chromatographic peak detection.
 
 ```{r}
 tmp <- peakRAM(refineChromPeaks(xmse, MergeNeighboringPeaksParam(),
