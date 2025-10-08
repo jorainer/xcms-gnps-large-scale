@@ -1,4 +1,6 @@
-# Large-scale data preprocessing with *xcms*
+# Large-scale LC-MS/MS data preprocessing with *xcms*
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17293665.svg)](https://doi.org/10.5281/zenodo.17293665)
 
 Here we present example workflows to perform a large scale untargeted
 metabolomics LC-MS/MS data preprocessing for molecular networking analysis using
