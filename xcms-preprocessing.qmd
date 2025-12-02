@@ -279,7 +279,7 @@ We first extract the feature values from the result object.
 ```{r}
 fall <- featureDefinitions(xmse)[, c("mzmin", "mzmed", "mzmax",
                                      "rtmin", "rtmed", "rtmax")]
-fall <- cbind(feature_id = rownames(fall),
+fall <- cbind(Row.names = rownames(fall),
               fall,
               featureValues(xmse, value = "into"))
 write.table(fall, file.path(dr, "xcms_all_features.txt"), sep = "\t",
